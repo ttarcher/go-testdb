@@ -191,10 +191,13 @@ func RowsFromCSVString(columns []string, s string, c ...rune) driver.Rows {
 		row := make([]driver.Value, len(columns))
 
 		for i, v := range r {
-			v := strings.TrimSpace(v)
+			v = strings.TrimSpace(v)
 
 			// If enableTimeParsing is on, Parse time with timeParsingLayout
 			if d.enableTimeParsing {
+				if v == "" || v == "NULL" {
+					continue
+				}
 				if t, err := time.Parse(d.timeParsingLayout, v); err == nil {
 					row[i] = t
 				} else {
