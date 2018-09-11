@@ -22,6 +22,7 @@ type testDriver struct {
 	openFunc          func(dsn string) (driver.Conn, error)
 	conn              *conn
 	enableTimeParsing bool
+	timeParsingLayout string
 }
 
 type query struct {
@@ -32,12 +33,17 @@ type query struct {
 
 func newDriver() *testDriver {
 	return &testDriver{
-		conn: newConn(),
+		conn:              newConn(),
+		timeParsingLayout: time.RFC3339,
 	}
 }
 
 func EnableTimeParsing(flag bool) {
 	d.enableTimeParsing = flag
+}
+
+func TimeParsingLayout(layout string) {
+	d.timeParsingLayout = layout
 }
 
 func (d *testDriver) Open(dsn string) (driver.Conn, error) {
@@ -174,7 +180,7 @@ func RowsFromCSVString(columns []string, s string, c ...rune) driver.Rows {
 		csvReader.Comma = c[0]
 	}
 
-	rows := [][]driver.Value{}
+	var rows [][]driver.Value
 	for {
 		r, err := csvReader.Read()
 
@@ -187,11 +193,10 @@ func RowsFromCSVString(columns []string, s string, c ...rune) driver.Rows {
 		for i, v := range r {
 			v := strings.TrimSpace(v)
 
-			// If enableTimeParsing is on, check to see if this is a
-			// time in RFC33339 format
+			// If enableTimeParsing is on, Parse time with timeParsingLayout
 			if d.enableTimeParsing {
-				if time, err := time.Parse(time.RFC3339, v); err == nil {
-					row[i] = time
+				if t, err := time.Parse(d.timeParsingLayout, v); err == nil {
+					row[i] = t
 				} else {
 					row[i] = v
 				}
